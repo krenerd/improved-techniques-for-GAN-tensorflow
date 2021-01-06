@@ -52,7 +52,7 @@ def load_model(image_size):
         g=tf.keras.models.load_model(os.path.join(dir,'generator.h5'))
         d=tf.keras.models.load_model(os.path.join(dir,'discriminator.h5'))
         
-        if tuple(d.input.shape)[1:-2]==image_size and tuple(g.output.shape)[1:-2]==image_size:
+        if tuple(d.input.shape)[1:-1]==image_size and tuple(g.output.shape)[1:-1]==image_size:
             print('Loading weights')
             return i,g,d
         else:
@@ -89,7 +89,7 @@ def generate_and_save_images(model, epoch, test_input):
   plt.savefig(f'./logs/images/epoch_{epoch}.png')
   plt.close()
   
-@tf.function
+#@tf.function
 def train_step(args,images,generator,discriminator):
     cross_entropy = tf.keras.losses.BinaryCrossentropy()
     def discriminator_loss(real_output, fake_output):
@@ -127,8 +127,8 @@ def train_step(args,images,generator,discriminator):
         else:
             gen_loss = generator_loss(fake_output)
         disc_loss = discriminator_loss(real_output, fake_output)
-        logs['g_loss']=gen_loss[-1]
-        logs['d_loss']=disc_loss[-1]
+        logs['g_loss']=gen_loss
+        logs['d_loss']=disc_loss
 
     gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
     gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
