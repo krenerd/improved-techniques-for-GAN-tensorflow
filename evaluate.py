@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(description='Download dataset')
 parser.add_argument("--samples", type=int,default=1000)
 parser.add_argument("--generate_image", type=str2bool,default=True)
 parser.add_argument("--metric", type=str,default='fid',choices=['fid','is'])
-parser.add_argument("--dataset", type=str, choices=['celeba'])
+parser.add_argument("--dataset", type=str, choices=['celeba','cifar10'])
 
 def load_model():
     dir='./logs'
@@ -37,6 +37,9 @@ def load_model():
 def load_celeba():
     return tfds.load('celeb_a',data_dir='./data')['train']
 
+def load_cifar10():
+    (train_images, _), (_, _)=tf.keras.datasets.cifar10.load_data()
+    return tf.data.Dataset.from_tensor_slices(train_images)
 
 def generate_and_save_images(model,images):
   noise=tf.random.normal([16, 100])
@@ -89,15 +92,16 @@ def calculate_fid_score(gen_image,true_images):
 
 def calculate_inception_score(images,eps=1E-16):
     input_pipeline=tf.keras.models.Sequential([tf.keras.layers.experimental.preprocessing.Resizing(299, 299)])
-    inception_model=tf.keras.applications.InceptionV3(include_top=False, pooling='avg', input_shape=(299,299,3))
+    inception_model=tf.keras.applications.inception_v3.InceptionV3(include_top=True, pooling='avg', input_shape=(299,299,3))
 
-    images = images.astype('float32')
+    images = images.numpy().astype('float32')
     images = input_pipeline.predict(images)
     p_yx = inception_model.predict(images)
 
     p_y = np.expand_dims(p_yx.mean(axis=0), 0)
     kl_d = p_yx * (np.log(p_yx + eps) - np.log(p_y + eps))
     sum_kl_d = kl_d.sum(axis=1)
+    
     avg_kl_d = np.mean(sum_kl_d)
     is_score = np.exp(avg_kl_d)
     return is_score
@@ -110,6 +114,10 @@ if __name__ == '__main__':
         print("Downloading CelebA dataset...")
         dataset=load_celeba()
         print("Downloading Complete")
+    elif args.dataset == 'cifar10':
+        print("Downloading CIFAR10 dataset...")
+        dataset=load_cifar10()
+        print("Downloading Complete")
     #Build model
     
     input_pipeline=model.build_input()
@@ -117,8 +125,9 @@ if __name__ == '__main__':
     generator=load_model()
     
     if args.generate_image:
-        for batch in dataset.batch(16):
-            truth_image=input_pipeline(batch['image'])
+        for truth_image in dataset.batch(16):
+            if args.dataset=='celeba':
+              truth_image=input_pipeline(truth_image['image'])
             break
         generate_and_save_images(generator,truth_image)
 
@@ -126,8 +135,9 @@ if __name__ == '__main__':
     num_examples_to_generate=args.samples
     noise_dim=100
         
-    for batch in dataset.batch(num_examples_to_generate):
-        truth_image=batch['image']
+    for truth_image in dataset.batch(num_examples_to_generate):
+        if args.dataset=='celeba':
+          truth_image=truth_image['image']
         break
         
     noise=tf.random.normal([num_examples_to_generate, noise_dim])

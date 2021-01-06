@@ -35,9 +35,8 @@ if __name__ == '__main__':
     predictions = generator(noise, training=False)
 
     fig = plt.figure(figsize=(w*2,h*2))
-    fig.suptitle('Gen images   True images')
     for i in range(w*h):
-        plt.subplot(h, w, i)
+        plt.subplot(h, w, i+1)
         plt.imshow((predictions[i, :, :, :].numpy() * 127.5 + 127.5).astype(int))
         plt.axis('off')
     plt.savefig(f'./generated_image.png')
