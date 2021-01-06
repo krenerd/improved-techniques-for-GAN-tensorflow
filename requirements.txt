@@ -1,0 +1,8 @@
+# pip install -r requirements.txt
+
+#Libaries to install for DCGAN-CelebA-tensorflow
+progressbar2>=3.38.0
+matplotlib>=3.2.2
+tensorflow_datasets>=4.0.1
+tensorflow==2.3.0
+argparse==1.1
