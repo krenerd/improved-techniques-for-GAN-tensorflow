@@ -123,7 +123,7 @@ def train_step(args,images,generator,discriminator):
 
         #Calculate loss
         if args.feature_matching:
-            gen_loss=tf.keras.losses.MSE(feature_fake.mean(axis=0),feature_real.mean(axis=0))
+            gen_loss=tf.keras.losses.MSE(tf.reduce_mean(feature_fake,axis=0),tf.reduce_mean(feature_real,axis=0))
         else:
             gen_loss = generator_loss(fake_output)
         disc_loss = discriminator_loss(real_output, fake_output)
