@@ -34,6 +34,7 @@ parser.add_argument("--learning_rate_gen",type=float,default=0.0001)
 parser.add_argument("--feature_matching", type=str2bool,default=True)
 parser.add_argument("--historical_averaging", type=str2bool,default=True)
 parser.add_argument("--label_smoothing", type=str2bool,default=True)
+parser.add_argument("--label_smoothing_alpha",type=float,default=0.9)
 parser.add_argument("--virtual_bn", type=str2bool,default=True)
 
 def save_model(g,d):
@@ -43,7 +44,11 @@ def save_model(g,d):
 
 def create_model(image_size):
     i=model.build_input(image_size)
-    g=model.build_generator(image_size)
+    #Defiune VBN model
+    if args.virtual_bn:
+        g=model.build_generator(image_size,vbn=args.batch_size)
+    else:
+        g=model.build_generator(image_size)
     d=model.build_discriminator(image_size)
     return i,g,d
     
@@ -96,12 +101,12 @@ def generate_and_save_images(model, epoch, test_input):
 def train_step(images):
     cross_entropy = tf.keras.losses.BinaryCrossentropy()
     def discriminator_loss(real_output, fake_output):
-        real_loss = cross_entropy(tf.ones_like(real_output), real_output)
+        real_loss = cross_entropy(tf.ones_like(real_output)*label_smoothing_alpha, real_output)
         fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
         total_loss = real_loss + fake_loss
         return total_loss
     def generator_loss(fake_output):
-        return cross_entropy(tf.ones_like(fake_output), fake_output)
+        return cross_entropy(tf.ones_like(fake_output)*label_smoothing_alpha, fake_output)
     
     logs={}
     noise = tf.random.normal([args.batch_size, noise_dim])
@@ -180,7 +185,11 @@ if __name__ == '__main__':
     if args.feature_matching:
         feature_discriminator=tf.keras.models.Sequential(discriminator.layers[:-2])
         final_model=tf.keras.models.Sequential(discriminator.layers[-2:])
-    
+    #Define label smoothing
+    if args.label_smoothing:
+        label_smoothing_alpha=args.label_smoothing_alpha
+    else:
+        label_smoothing_alpha=1.0
     #Train loop
     tf.random.set_seed(42)
     noise_dim = 100

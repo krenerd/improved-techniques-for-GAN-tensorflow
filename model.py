@@ -1,7 +1,7 @@
 from tensorflow.keras import layers
 import tensorflow as tf
 
-def build_generator(image_size=(64,64),channels=64):
+def build_generator(image_size=(64,64),channels=64,vbn=None):
     w,h=image_size
     
     model = tf.keras.Sequential()
