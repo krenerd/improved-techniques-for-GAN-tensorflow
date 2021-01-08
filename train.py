@@ -32,6 +32,9 @@ parser.add_argument("--learning_rate_dis",type=float,default=0.0001)
 parser.add_argument("--learning_rate_gen",type=float,default=0.0001)
 
 parser.add_argument("--feature_matching", type=str2bool,default=True)
+parser.add_argument("--historical_averaging", type=str2bool,default=True)
+parser.add_argument("--label_smoothing", type=str2bool,default=True)
+parser.add_argument("--virtual_bn", type=str2bool,default=True)
 
 def save_model(g,d):
     dir='./logs'
@@ -102,10 +105,6 @@ def train_step(images):
     
     logs={}
     noise = tf.random.normal([args.batch_size, noise_dim])
-    #Define feature matching model
-    if args.feature_matching:
-        feature_discriminator=tf.keras.models.Sequential(discriminator.layers[:-2])
-        final_model=tf.keras.models.Sequential(discriminator.layers[-2:])
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
         generated_images = generator(noise, training=True)
@@ -177,7 +176,10 @@ if __name__ == '__main__':
         input_pipeline,generator,discriminator=load_model(image_size)
     else:
         input_pipeline,generator,discriminator=create_model(image_size)
-
+    #Define feature matching model
+    if args.feature_matching:
+        feature_discriminator=tf.keras.models.Sequential(discriminator.layers[:-2])
+        final_model=tf.keras.models.Sequential(discriminator.layers[-2:])
     
     #Train loop
     tf.random.set_seed(42)
@@ -197,8 +199,8 @@ if __name__ == '__main__':
           if args.dataset=='celeba':
               image_batch=image_batch['image']
           logs=train_step(image_batch)
-          losses['G_loss'].append(logs['g_loss'])
-          losses['D_loss'].append(logs['d_loss'])
+          #losses['G_loss'].append(logs['g_loss'])
+          #losses['D_loss'].append(logs['d_loss'])
 
           
         # Produce images for the GIF as we go
