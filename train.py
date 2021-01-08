@@ -25,7 +25,7 @@ parser.add_argument("--initial_epoch", type=int,default=0)
 parser.add_argument("--epoch", type=int,default=100)
 parser.add_argument("--evaluate_FID", type=str2bool,default=True)
 parser.add_argument("--load_model", type=str2bool,default=True)
-parser.add_argument("--dataset", type=str, choices=['celeba','cifar10'])
+parser.add_argument("--dataset", type=str, choices=['celeba','cifar10','imagenet64'])
 parser.add_argument("--generate_image", type=str2bool,default=True)
 parser.add_argument("--batch_size",type=int,default=64)
 parser.add_argument("--learning_rate_dis",type=float,default=0.0001)
@@ -72,7 +72,10 @@ def load_model(image_size):
         return create_model(image_size)
       
 def load_celeba():
-    return tfds.load('celeb_a',data_dir='./data')['train']
+    return tfds.load('celeb_a',data_dir='./data/celeba')['train']
+
+def load_imagenet64():
+    return tfds.load('imagenet_resized/64x64',data_dir='./data/imagenet_64')['train']
 
 def load_cifar10():
     (train_images, _), (_, _)=tf.keras.datasets.cifar10.load_data()
@@ -170,6 +173,11 @@ if __name__ == '__main__':
         dataset=load_celeba()
         image_size=(64,64)
         print("Downloading Complete")
+    elif args.dataset == 'imagenet64':
+        print("Downloading Imagenet(64x64) dataset...")
+        dataset=load_imagenet64()
+        image_size=(64,64)
+        print("Downloading Complete")
     elif args.dataset=='cifar10':
         print("Downloading CIFAR 10 dataset...")
         dataset=load_cifar10()
@@ -205,7 +213,7 @@ if __name__ == '__main__':
         start = time.time()
     
         for image_batch in progressbar.progressbar(dataset.batch(args.batch_size)):
-          if args.dataset=='celeba':
+          if args.dataset=='celeba' or args.dataset=='imagenet64':
               image_batch=image_batch['image']
           logs=train_step(image_batch)
           #losses['G_loss'].append(logs['g_loss'])
@@ -221,7 +229,7 @@ if __name__ == '__main__':
         plot_losses(args,losses)
         print ('Time for epoch {} is {} sec'.format(epoch + 1, time.time()-start))
         for image_batch in dataset.batch(args.samples_for_eval):
-            if args.dataset=='celeba':
+            if args.dataset=='celeba' or args.dataset=='imagenet64':
               image_batch=image_batch['image']
             
             if args.evaluate_FID:
